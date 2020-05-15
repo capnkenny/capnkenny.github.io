@@ -1,12 +1,12 @@
 ---
-layout: single
+layout: splash
 title: "CHIP-8 in NovelRT"
 date: 2020-05-15 07:00:00
 excerpt: A dive into creating an emulator in the NovelRT engine.
+header:
+  overlay_image: https://user-images.githubusercontent.com/10300290/80096502-ab308280-8537-11ea-881c-32d1cf62463e.png
 ---
-  
-<img src="https://user-images.githubusercontent.com/10300290/80096502-ab308280-8537-11ea-881c-32d1cf62463e.png" />
-  
+
 *(Before reading, please note that at the time of writing, I am currently affiliated with the NovelRT project. Insert shameless plug here.)*
   
 Recently, I found myself at a point in time where I felt that I wanted to do more than just one project. Normally, I tend to bounce from one to the other, but in this case I wanted to complete something before moving on.
@@ -64,7 +64,92 @@ For me, emulators have always been fascinating. As a child, the thought of makin
 
   To start, I'm going to fully admit that I was only trying to get what I could done between the times of 6AM - 8AM every weekday just so that I could finish up before work started, and I'd have time to eat and shower. In retrospect, I shouldn't rush the design process, nor should I assume that what works in a tutorial will work for me.
   
+  In a few different CHIP-8 programs that I had found, it appears that they would store the display in a size 2048 array by doing the equivalent of:
+  ```
+  std::array<unsigned char, 2048> gfx;
+  ```
+  Meaning that since the display for CHIP-8 was 64x32, we would be storing the entire display in a one-dimension array for a 2D plane. Unwrapping this properly is where the fun part begins :D  
   
+  The simplest way I could pull this off was to use a nested for-loop - one to control the x-axis, and one to control the y-axis. Then, if the "pixel" in the display array was "active" (think 1s and 0s), it would display white; if not, it would display black. Sounds simple enough, but I already had to use a workaround at step 1...
+  
+  <img src="https://cdn.discordapp.com/attachments/543898968942444573/703722544821305364/expected.PNG" />
+  By default, without changing engine code the engine outputs a blue background - *awesomeeee...*
+  
+  So, creating one big rectangle to block it out will work for now:
+  ```
+  auto bkgdTransform = NovelRT::Transform(origin, 0, NovelRT::Maths::GeoVector2<float>(1920, 1080));
+  auto bkgd = runner.getRenderer().lock()->createBasicFillRect(bkgdTransform, 3, NovelRT::Graphics::RGBAConfig(0,0,0,255));
+  ```
+  
+  Next is to actually make the "pixels" so that we can draw what the CPU tells us to:
+  ```
+	//Setup gfx and input
+	float screenH = 1080.0f;
+	float screenW = 1920.0f;
+	auto origin = NovelRT::Maths::GeoVector2<float>(screenW / 2, screenH / 2);
+	
+	//Get Pixel and Increment Dimensions
+	auto pixelWidth = screenW / 64;			
+	auto pixelHeight = screenH / 32;
+	auto incrementX = 30.0f;			//X and Y work off of midpoints
+	auto incrementY = 33.75f;
+	...
+	std::array<std::array<std::unique_ptr<NovelRT::Graphics::BasicFillRect>, 64>,32> pixels = 
+		std::array<std::array<std::unique_ptr<NovelRT::Graphics::BasicFillRect>, 64>, 32>();
+
+	//Create pixels in 2D array
+	for (int y = 1; y <= 32; y++)
+	{
+		auto pixelsX = std::array<std::unique_ptr<NovelRT::Graphics::BasicFillRect>, 64>();
+		auto pixelOrigin = NovelRT::Maths::GeoVector2<float>();
+		if (y == 1)
+		{
+			pixelOrigin = NovelRT::Maths::GeoVector2<float>(incrementX / 2, (incrementY / 2));
+		}
+		else
+		{
+			pixelOrigin = NovelRT::Maths::GeoVector2<float>(incrementX / 2, incrementY);
+		}
+		for (int x = 0; x < 64; x++)
+		{
+			auto transform = NovelRT::Transform(pixelOrigin, 0, NovelRT::Maths::GeoVector2<float>(pixelWidth, pixelHeight));
+			pixelsX[x] = render.lock()->createBasicFillRect(transform, 2, NovelRT::Graphics::RGBAConfig(255,255,255,0));
+			incrementX += pixelWidth;
+			//Shift the pixels into alignment with the screen
+			if (x != 0)
+			{
+				pixelsX[x]->transform().position().setX(pixelsX[x]->transform().position().getX() - (pixelWidth / 2));
+			}
+			if (y != 1)
+			{
+				pixelsX[x]->transform().position().setY(pixelsX[x]->transform().position().getY() - (pixelHeight / 2));
+			}
+			pixelOrigin.setX(incrementX);
+		}
+		incrementX = 30.0f;
+		incrementY += pixelHeight;
+		auto point = y - 1;
+		pixels[point] = std::move(pixelsX);
+	}
+  ```
+  Here, you'll see that I...  
+  1) Set the screen's width and height,  
+  2) Create the pixel width and height,  
+  3) Set up an amout to increment X and Y by, and  
+  4) Go through the process of creating the transforms and rectangles (known as `BasicFillRect`s in NovelRT).
+  
+  Now, if you read through, you'll notice that I hardcode the screen size to 1920x1080. I *do* have the option of pulling the screen size directly from the display via NovelRT's `WindowingService`, however this is more of a misnomer - the 1920x1080 size is actually what NovelRT uses in world-space, which allows CHIP-8 to resize without having to change much of anything to do so.  
+    
+  Next, you'll see that I break up the for-loop a bit with multiple if-else statements. This is due to the fact that the transforms work off of midpoints when rendering, and the engine follows the top-left methodology when rendering, so if I were to specify a rectangle's origin at `incrementX` and `incrementY` (instead of halving them) everything would shift be shifted downwards and to the right.
+  
+  After massaging the code a bit so that the transforms initialized in their correct placements, and loading in one of the variants of Pong...
+  
+  <img src="https://cdn.discordapp.com/attachments/556617985209532458/701613232061939722/unknown.png" />
+  *WE HAVE LI-*  
+  <img src="https://cdn.discordapp.com/attachments/556617985209532458/701613362282365009/unknown.png" />  
+  ...ftoff.  
+    
+  Welp, Rome wasn't built in a day and neither was this, so time for debugging. Thankfully, this was an error with how I wrote the instruction, not how I was trying to render it :)
   
   
   [touhou]: https://github.com/novelrt/touhou-novelrt
