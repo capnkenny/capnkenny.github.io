@@ -149,7 +149,79 @@ For me, emulators have always been fascinating. As a child, the thought of makin
   <img src="https://cdn.discordapp.com/attachments/556617985209532458/701613362282365009/unknown.png" />  
   ...ftoff.  
     
-  Welp, Rome wasn't built in a day and neither was this, so time for debugging. Thankfully, this was an error with how I wrote the instruction, not how I was trying to render it :)
+  Welp, Rome wasn't built in a day and neither was this, so time for debugging. Thankfully, this was an error with how I wrote the instruction, not how I was trying to render it :)  
+    
+  Some more debugging, and...  
+  <img src="https://user-images.githubusercontent.com/10300290/82118827-a8483c80-9747-11ea-9fba-530125868bb6.png" />  
+  Woohoo! It's almost done!  
+    
+  Finally, it was time to do some neatening up and add the sound like I had expected to do. I'm more than thankful that most of this is just handled in `CPU.cpp`, as this is just a few moments of cleaning up output...  
+  <br /><img src="https://user-images.githubusercontent.com/10300290/82119175-64a30200-974a-11ea-960f-6735fe58600a.png" alt="Pounding the shell with logs of each Opcode being executed" height="240" width="207" />	Debug vs. Release	<img src="https://user-images.githubusercontent.com/10300290/82119174-64a30200-974a-11ea-8fa1-882b75b26796.png" alt="Nice clean one-time output :D" height="240" width="400" />
+	
+  and making sure that when sound is initialized as such...
   
+  ```
+  _audio = runner->getAudioService();  
+  _audio.lock()->initializeAudio();
+  ```
   
-  [touhou]: https://github.com/novelrt/touhou-novelrt
+ ..that it let's me pull in OpenAL-Soft and control it to my whim...
+ 
+ ```
+void CPU::generateBeep()
+{  
+	//Nobody said I needed to play by the rules.. :D
+	alGenBuffers(1, &_buff);
+		
+	...
+	short* samples;
+	samples = new short[bufferSize];
+	for (int i = 0; i < bufferSize; i++)
+	{
+		samples[i] = static_cast<short>(32760 * std::sin((2.0f*float(3.14159265359)*frequency)/sampleRate * i));
+	}
+
+	alBufferData(_buff, AL_FORMAT_MONO16, samples, bufferSize, static_cast<ALsizei>(sampleRate));
+	ALuint source = 0;
+	alGenSources(1, &source);
+	alSourcei(source, AL_BUFFER, _buff);
+ 	_source = source;
+}
+
+void CPU::beep()
+{
+	alSourcePlay(_source);
+}
+ ```
+  
+  ...and that's it! Did a little more testing based on the opcodes with a test ROM (to make sure the instructions passed their test), and it was complete!
+  
+## After the journey was over...
+  
+So, after all of this, what did I take away from it?  
+- Always use your resources when it comes to emulation.  
+: Anything more than CHIP-8 would require more research and testing, and a completely different approach most likely.  
+
+- Using NovelRT was pretty simple in this context!  
+: Although maybe not the *best* choice due to the stigma of using game engines instead of something like SDL natively (overhead, performance, blah blah..) in this context it worked *almost* for everything I needed to do.
+  
+- There's a couple of PRs/suggestions I could offer to NovelRT.  
+: Namely, changing the default background color would have helped avoid maybe... ~4 lines of code, but I can see it being an issue in other projects.  
+: Also, seeing if there's any interest in sine-wave generation for the Audio Library would help, seeing as sometimes you just need a simple sound, not a complex WAV file being loaded in. (It helps that I'm the one responsible for this...)  
+  
+- And finally, it was a great feeling completing a project instead of bouncing back and forth!  
+: For someone who seems to not be able to complete things as my mind wanders, I appreciate the fact that I stuck through it (in 9 days since I typically dedicated only 2/3 hours *at most* a day) and actually put a copy out there for people to try if they wanted.  
+  
+For those of you who stuck through this, thanks for reading! Here's a quick snippet of the emulator in action:  
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/cdlNpU32bA0" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>  
+  
+  And if you'd like to see the code, you can check it out [here].  
+    
+Until next time!
+
+-- Cap'n Kenny
+
+
+
+[here]: https://github.com/capnkenny/Novel-8
+[touhou]: https://github.com/novelrt/touhou-novelrt
