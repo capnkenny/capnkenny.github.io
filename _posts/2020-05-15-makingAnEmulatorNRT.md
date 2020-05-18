@@ -1,7 +1,7 @@
 ---
 layout: splash
 title: "CHIP-8 in NovelRT"
-date: 2020-05-15 07:00:00
+date: 2020-05-18 08:30:00 -0400
 excerpt: A dive into creating an emulator in the NovelRT engine.
 header:
   overlay_image: https://user-images.githubusercontent.com/10300290/80096502-ab308280-8537-11ea-881c-32d1cf62463e.png
@@ -23,14 +23,14 @@ For me, emulators have always been fascinating. As a child, the thought of makin
   - ~~Unity~~ (No C++)
   - ~~Unreal Engine~~
   - ~~CryEngine~~
-  - NovelRT
+  - NovelRT  
   Why not make it in the engine I'm working on!? Surely nothing can go wrong, right?
   
 ## Going into NovelRT
   
   Since I'm (at the time of this being written) a member of the NovelRT Group, I guess it would be expected that a shameless plug is inserted into this post (it won't happen every time, I promise).
   
-  For those who don't know, *NovelRT* is a cross-platform 2D game engine that is designed with an emphasis on Visual Novels (*cough*Novel*cough*) that can be found [here](https://github.com/novelrt/NovelRT). It can, however, also be used for other uses as well - [touhou] games, platformers, or anything that is in 2D perspective. And/or a game (I guess it doesn't actually have to be?). Regardless, knowing how much work we've put into it so far, I wanted to make something a little bit different than what was intended, and see how it reacts when using it to simulate a CPU and display for CHIP-8.  
+  For those who don't know, *NovelRT* is a cross-platform 2D game engine that is designed with an emphasis on Visual Novels (*cough*Novel*cough*) that can be found [here](https://github.com/novelrt/NovelRT). It can, however, also be used for other uses as well - [touhou] games, platformers, or anything that is in 2D perspective. Regardless, knowing how much work we've put into it so far, I wanted to make something a little bit different than what was intended, and see how it reacts when using it to simulate a CPU and display for CHIP-8.  
   
   So going forward, the plan of action was as such...
   - Implement the CPU and RAM
