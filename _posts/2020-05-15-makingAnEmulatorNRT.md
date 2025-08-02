@@ -166,7 +166,7 @@ For me, emulators have always been fascinating. As a child, the thought of makin
   _audio.lock()->initializeAudio();
   ```
   
- ..that it let's me pull in OpenAL-Soft and control it to my whim...
+ ..that it lets me pull in OpenAL-Soft and...
  
  ```
 void CPU::generateBeep()
@@ -195,7 +195,7 @@ void CPU::beep()
 }
  ```
   
-  ...and that's it! Did a little more testing based on the opcodes with a test ROM (to make sure the instructions passed their test), and it was complete!
+  ...that's it! Did a little more testing based on the opcodes with a test ROM (to make sure the instructions passed their test), and it was complete!
   
 ## After the journey was over...
   
